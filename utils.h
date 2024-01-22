@@ -24,7 +24,7 @@
 #include <sys/epoll.h>
 #include <time.h>
 
-#define PORT 77777
+#define PORT 7777
 #define TCP_PROTOCOL 6
 #define MAX_CONNECTIONS 16
 #define MAX_EPOLLEVENTS 32

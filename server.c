@@ -183,6 +183,10 @@ void *handleConnection(void *arg)
 			{
 				deleteFile();
 			}
+			else if (code = MOVE)
+			{
+				move();
+			}
 		}
 	}
 	free(buffer);
@@ -404,7 +408,7 @@ void list(fileSystem *parent)
 
 void download()
 {
-	char logMsg[100];
+	char logMsg[1024];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 	char thrash[1];
@@ -422,7 +426,7 @@ void download()
 	int accessStat = access(filePath, F_OK);
 	if (accessStat == -1)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 		sendLogMessage(logMsg);
 		status = FILE_NOT_FOUND;
 		send(conn_sock, &status, 4, 0);
@@ -432,7 +436,7 @@ void download()
 	accessStat = access(filePath, R_OK);
 	if (accessStat == -1)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tPERMISSION_DENIED\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tPERMISSION_DENIED\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 		sendLogMessage(logMsg);
 		status = PERMISSION_DENIED;
 		send(conn_sock, &status, 4, 0);
@@ -443,7 +447,7 @@ void download()
 	int fd = open(filePath, O_RDONLY);
 	if (fd == -1)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 		sendLogMessage(logMsg);
 		status = FILE_NOT_FOUND;
 		send(conn_sock, &status, 4, 0);
@@ -462,12 +466,15 @@ void download()
 	send(conn_sock, ";", 1, 0);
 	close(fd);
 
-	return SUCCESS;
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tSUCCESS\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
+	sendLogMessage(logMsg);
+
+	return;
 }
 
 void upload()
 {
-	char logMsg[100];
+	char logMsg[1024];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 	uint32_t status = SUCCESS;
@@ -492,7 +499,7 @@ void upload()
 	int accessStat = access(filePath, F_OK);
 	if (accessStat == 0)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tPERMISSION_DENIED(File already exists)\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tPERMISSION_DENIED(File already exists)\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 		sendLogMessage(logMsg);
 		status = PERMISSION_DENIED;
 		send(conn_sock, &status, 4, 0);
@@ -505,7 +512,7 @@ void upload()
 	{
 		if (errno == EDQUOT)
 		{
-			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOUT_OF_MEMORY\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOUT_OF_MEMORY\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 			sendLogMessage(logMsg);
 			status = OUT_OF_MEMEORY;
 			send(conn_sock, &status, 4, 0);
@@ -514,7 +521,7 @@ void upload()
 		}
 		else
 		{
-			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOTHER_ERROR\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 			sendLogMessage(logMsg);
 			status = OTHER_ERROR;
 			send(conn_sock, &status, 4, 0);
@@ -531,7 +538,7 @@ void upload()
 	int wc = write(fd, content, len);
 	if (wc == -1)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOTHER_ERROR\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 		sendLogMessage(logMsg);
 		status = OTHER_ERROR;
 		send(conn_sock, &status, 4, 0);
@@ -542,7 +549,7 @@ void upload()
 
 	AddFileToTree(filePath, &root);
 
-	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tSUCCESS\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 	sendLogMessage(logMsg);
 
 	status = SUCCESS;
@@ -553,7 +560,7 @@ void upload()
 
 void deleteFile()
 {
-	char logMsg[100];
+	char logMsg[1024];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 	uint32_t status = SUCCESS;
@@ -569,7 +576,7 @@ void deleteFile()
 
 	if (strcmp(buffer, "./root") == 0)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tPERMISSION_DENIED(Cannot delete root directory)\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tPERMISSION_DENIED(Cannot delete root directory)\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, buffer);
 		sendLogMessage(logMsg);
 		status = PERMISSION_DENIED;
 		send(conn_sock, &status, 4, 0);
@@ -579,7 +586,7 @@ void deleteFile()
 
 	if (checkExistanceFile(buffer) == 0)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tFILE_NOT_FOUND\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, buffer);
 		sendLogMessage(logMsg);
 		status = FILE_NOT_FOUND;
 		send(conn_sock, &status, 4, 0);
@@ -590,7 +597,7 @@ void deleteFile()
 	int accessStat = access(buffer, W_OK);
 	if (accessStat == -1)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tPERMISSION_DENIED\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tPERMISSION_DENIED\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, buffer);
 		sendLogMessage(logMsg);
 		status = PERMISSION_DENIED;
 		send(conn_sock, &status, 4, 0);
@@ -600,7 +607,7 @@ void deleteFile()
 
 	if (unlink(buffer) == -1)
 	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tOTHER_ERROR\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, buffer);
 		sendLogMessage(logMsg);
 		status = OTHER_ERROR;
 		send(conn_sock, &status, 4, 0);
@@ -608,9 +615,83 @@ void deleteFile()
 		return;
 	}
 
-	RemoveFileFromTree(buffer, &root);
+	EmptyTree(&root);
+	initFileSystem();
 
-	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tSUCCESS\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, buffer);
+	sendLogMessage(logMsg);
+	status = SUCCESS;
+	send(conn_sock, &status, 4, 0);
+	send(conn_sock, ";", 1, 0);
+	return;
+}
+
+void move()
+{
+	char logMsg[1024];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	uint32_t status = SUCCESS;
+	char thrash[1];
+	char oldPath[100];
+	char newPath[100];
+	memset(oldPath, 0, 100);
+	memset(newPath, 0, 100);
+	uint32_t len;
+
+	recv(conn_sock, &len, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	recv(conn_sock, oldPath, len, 0);
+	recv(conn_sock, thrash, 1, 0);
+	recv(conn_sock, &len, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	recv(conn_sock, newPath, len, 0);
+	recv(conn_sock, thrash, 1, 0);
+
+	if (strcmp(oldPath, "./root") == 0)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tMOVE\t\tClient:%d\tPERMISSION_DENIED(Cannot move root directory)\t%s\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, oldPath, newPath);
+		sendLogMessage(logMsg);
+		status = PERMISSION_DENIED;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	if (checkExistanceFile(oldPath) == 0)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tMOVE\t\tClient:%d\tFILE_NOT_FOUND(Old path)\t%s\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, oldPath, newPath);
+		sendLogMessage(logMsg);
+		status = FILE_NOT_FOUND;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	if (checkExistanceFile(newPath) == 1)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tMOVE\t\tClient:%d\tPERMISSION_DENIED(New path already exists)\t%s\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, oldPath, newPath);
+		sendLogMessage(logMsg);
+		status = PERMISSION_DENIED;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	if (rename(oldPath, newPath) == -1)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tMOVE\t\tClient:%d\tOTHER_ERROR(Rename failed)\t%s\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, oldPath, newPath);
+		sendLogMessage(logMsg);
+		status = OTHER_ERROR;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	EmptyTree(&root);
+	initFileSystem();
+
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tMOVE\t\tClient:%d\tSUCCESS\t%s\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, oldPath, newPath);
 	sendLogMessage(logMsg);
 	status = SUCCESS;
 	send(conn_sock, &status, 4, 0);
