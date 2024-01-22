@@ -27,3 +27,18 @@
 2024-1-22 20:0:35	LIST		Client:6	SUCCESS
 2024-1-22 20:2:14	Connection closed:6
 2024-1-22 20:2:15	Server closed
+2024-1-22 20:42:31	Server started
+2024-1-22 20:42:31	Connection accepted:6
+2024-1-22 20:42:36	LIST		Client:6	SUCCESS
+2024-1-22 20:42:51	DELETE		Client:6	PERMISSION_DENIED
+2024-1-22 20:44:55	Connection closed:6
+2024-1-22 20:45:0	Server closed
+2024-1-22 20:45:12	Server started
+2024-1-22 20:45:12	Connection accepted:6
+2024-1-22 20:45:19	LIST		Client:6	SUCCESS
+2024-1-22 20:45:28	DELETE		Client:6	SUCCESS
+2024-1-22 20:45:32	LIST		Client:6	SUCCESS
+2024-1-22 20:46:17	DELETE		Client:6	PERMISSION_DENIED(Cannot delete root directory)
+2024-1-22 20:46:29	DELETE		Client:6	FILE_NOT_FOUND
+2024-1-22 20:46:43	Connection closed:6
+2024-1-22 20:46:47	Server closed

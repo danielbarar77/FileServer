@@ -131,8 +131,18 @@ void upload(char *filePath)
 	close(fd);
 }
 
-void delete(char *command, int dimension)
+void deleteFile(char *filePath)
 {
+	uint32_t code = DELETE;
+	send(server_sock, &code, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	uint32_t len = strlen(filePath);
+	send(server_sock, &len, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	send(server_sock, filePath, len, 0);
+	send(server_sock, ";", 1, 0);
 }
 
 void getFileName(char *command)
@@ -187,9 +197,14 @@ char *executeCommand(char *input)
 	}
 	else if (strcmp(token, "DELETE") == 0)
 	{
-		memcpy(command, intToChar(0x8), 4);
-		printf("Not implemented yet!\n");
-		return NULL;
+		lastCommand = DELETE;
+		token = strtok(NULL, " \n\0");
+		if (token == NULL)
+		{
+			printf("Invalid command\n");
+			return NULL;
+		}
+		deleteFile(token);
 	}
 	else if (strcmp(token, "MOVE") == 0)
 	{
@@ -286,6 +301,27 @@ void reciveData()
 		else if (status == OUT_OF_MEMEORY)
 		{
 			printf("Out of memory !\n");
+		}
+		else if (status == OTHER_ERROR)
+		{
+			printf("Other error !\n");
+		}
+	}
+	else if (lastCommand == DELETE)
+	{
+		recv(server_sock, &status, 4, 0);
+		recv(server_sock, thrash, 1, 0);
+		if (status == SUCCESS)
+		{
+			printf("Success !\n");
+		}
+		else if (status == FILE_NOT_FOUND)
+		{
+			printf("File not found !\n");
+		}
+		else if (status == PERMISSION_DENIED)
+		{
+			printf("Permission denied !\n");
 		}
 		else if (status == OTHER_ERROR)
 		{

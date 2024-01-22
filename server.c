@@ -179,6 +179,10 @@ void *handleConnection(void *arg)
 			{
 				upload();
 			}
+			else if (code == DELETE)
+			{
+				deleteFile();
+			}
 		}
 	}
 	free(buffer);
@@ -357,6 +361,16 @@ void getFileName(char *buffer)
 	fileName[len - i - 1] = '\0';
 }
 
+int checkExistanceFile(char *filepath)
+{
+	int accessStatus = access(filepath, F_OK);
+	if (accessStatus == -1)
+	{
+		return 0;
+	}
+	return 1;
+}
+
 void list(fileSystem *parent)
 {
 	// print list of directories and files like ls -R
@@ -531,6 +545,73 @@ void upload()
 	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 	sendLogMessage(logMsg);
 
+	status = SUCCESS;
+	send(conn_sock, &status, 4, 0);
+	send(conn_sock, ";", 1, 0);
+	return;
+}
+
+void deleteFile()
+{
+	char logMsg[100];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	uint32_t status = SUCCESS;
+	char thrash[1];
+	char buffer[100];
+	memset(buffer, 0, 100);
+
+	uint32_t len;
+	recv(conn_sock, &len, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	recv(conn_sock, buffer, len, 0);
+	recv(conn_sock, thrash, 1, 0);
+
+	if (strcmp(buffer, "./root") == 0)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tPERMISSION_DENIED(Cannot delete root directory)\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = PERMISSION_DENIED;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	if (checkExistanceFile(buffer) == 0)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = FILE_NOT_FOUND;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	int accessStat = access(buffer, W_OK);
+	if (accessStat == -1)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tPERMISSION_DENIED\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = PERMISSION_DENIED;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	if (unlink(buffer) == -1)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = OTHER_ERROR;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	RemoveFileFromTree(buffer, &root);
+
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDELETE\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+	sendLogMessage(logMsg);
 	status = SUCCESS;
 	send(conn_sock, &status, 4, 0);
 	send(conn_sock, ";", 1, 0);
