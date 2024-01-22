@@ -135,7 +135,7 @@ void *handleConnection(void *arg)
 		if (n == -1)
 		{
 			printf("Connection closed: %d\n", conn_sock);
-			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection closed by client: %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection closed:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 			sendLogMessage(logMsg);
 			close(conn_sock);
 			break;
@@ -143,7 +143,7 @@ void *handleConnection(void *arg)
 		else if (n == 0)
 		{
 			printf("Connection closed: %d\n", conn_sock);
-			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection closed by client: %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection closed:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 			sendLogMessage(logMsg);
 			close(conn_sock);
 			break;
@@ -156,7 +156,7 @@ void *handleConnection(void *arg)
 			memset(logMsg, 0, 100);
 			if (code == LIST)
 			{
-				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\tClient:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\t\tClient:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 				sendLogMessage(logMsg);
 
 				list(&root);
@@ -357,6 +357,10 @@ int download(char *filePath)
 
 void listenForConnection()
 {
+	char logMsg[100];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+
 	while (isRunning)
 	{
 		nfds = epoll_wait(epollfd, events, MAX_EPOLLEVENTS, -1);
@@ -379,6 +383,9 @@ void listenForConnection()
 					perror("accept");
 					exit(1);
 				}
+
+				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection accepted:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+				sendLogMessage(logMsg);
 
 				printf("Connection accepted: %d\n", conn_sock);
 

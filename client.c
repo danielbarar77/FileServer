@@ -237,23 +237,34 @@ void reciveData()
 	else if (lastCommand == DOWNLOAD)
 	{
 		recv(server_sock, &status, 4, 0);
-		recv(server_sock, thrash, 1, 0);
-		memset(buffer, 0, 512);
-		recv(server_sock, &size, 4, 0);
-		recv(server_sock, thrash, 1, 0);
-		memset(buffer, 0, 512);
-		recv(server_sock, buffer, size, 0);
-		// buffer[size] = '\0';
-		printf("Size: %d, buffer: %s///\n", size, buffer);
-		int fd = open(fileName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-		if (fd == -1)
+		if (status == SUCCESS)
 		{
-			perror("open");
-			return -1;
+			recv(server_sock, thrash, 1, 0);
+			memset(buffer, 0, 512);
+			recv(server_sock, &size, 4, 0);
+			recv(server_sock, thrash, 1, 0);
+			memset(buffer, 0, 512);
+			recv(server_sock, buffer, size, 0);
+			// buffer[size] = '\0';
+			printf("Size: %d, buffer: %s///\n", size, buffer);
+			int fd = open(fileName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+			if (fd == -1)
+			{
+				perror("open");
+				return -1;
+			}
+			int wc = write(fd, buffer, size);
+			printf("Written %d bytes in %s file\n", wc, fileName);
+			close(fd);
 		}
-		int wc = write(fd, buffer, size);
-		printf("Written %d bytes in %s file\n", wc, fileName);
-		close(fd);
+		else if (status == FILE_NOT_FOUND)
+		{
+			printf("File not found\n");
+		}
+		else if (status == PERMISSION_DENIED)
+		{
+			printf("Permission denied\n");
+		}
 	}
 }
 
