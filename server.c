@@ -1,13 +1,16 @@
 #include "utils.h"
 
 int isRunning = 1;
+pthread_mutex_t isRunningMutex = PTHREAD_MUTEX_INITIALIZER;
 
+struct epoll_event stdin_ev;
 struct epoll_event ev, events[MAX_EPOLLEVENTS];
 int listen_sock, conn_sock, nfds, epollfd;
 
 struct sockaddr_in server_addr;
 
 pthread_t connections_thread;
+pthread_t logging_thread;
 
 typedef struct fileSystem
 {
@@ -34,29 +37,46 @@ int bufferToSendSize = 0;
 
 int logfd;
 
-static void siq_handler(int sig)
+void endServer()
 {
-	printf("Received signal %s\n", strsignal(sig));
+	char logMsg[100];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
 
-	if (sig == SIGINT)
+	pthread_mutex_lock(&isRunningMutex);
+	if (isRunning)
 	{
-		char logMsg[100];
-		time_t t = time(NULL);
-		struct tm tm = *localtime(&t);
 		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tServer closed\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 		sendLogMessage(logMsg);
 		printf("Closing server\n");
 		isRunning = 0;
+
+		pthread_join(connections_thread, NULL);
+		pthread_join(logging_thread, NULL);
+
 		close(listen_sock);
 		close(conn_sock);
 		close(epollfd);
 		close(logfd);
-		exit(0);
+	}
+	pthread_mutex_unlock(&isRunningMutex);
+
+	exit(0);
+}
+
+static void siq_handler(int sig)
+{
+	printf("Received signal %s\n", strsignal(sig));
+
+	if (sig == SIGINT || sig == SIGTERM)
+	{
+		endServer();
 	}
 }
 
 void signalHandler()
 {
+	char logMsg[100];
 	struct sigaction sa;
 	sigset_t mask;
 
@@ -66,6 +86,11 @@ void signalHandler()
 	sa.sa_mask = mask;
 
 	if (sigaction(SIGINT, &sa, NULL) == -1)
+	{
+		perror("sigaction");
+		exit(1);
+	}
+	if (sigaction(SIGTERM, &sa, NULL) == -1)
 	{
 		perror("sigaction");
 		exit(1);
@@ -100,20 +125,26 @@ void *handleConnection(void *arg)
 	int n;
 	time_t t;
 	struct tm tm;
+	char logMsg[100];
 
-	while (1)
+	while (isRunning)
 	{
 		n = recv(conn_sock, &code, 4, 0);
 		t = time(NULL);
 		tm = *localtime(&t);
 		if (n == -1)
 		{
-			perror("recv");
-			exit(1);
+			printf("Connection closed: %d\n", conn_sock);
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection closed by client: %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sendLogMessage(logMsg);
+			close(conn_sock);
+			break;
 		}
 		else if (n == 0)
 		{
 			printf("Connection closed: %d\n", conn_sock);
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tConnection closed by client: %d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sendLogMessage(logMsg);
 			close(conn_sock);
 			break;
 		}
@@ -125,7 +156,7 @@ void *handleConnection(void *arg)
 			memset(logMsg, 0, 100);
 			if (code == LIST)
 			{
-				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\tClient:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 				sendLogMessage(logMsg);
 
 				list(&root);
@@ -141,7 +172,7 @@ void *handleConnection(void *arg)
 			}
 			else if (code == DOWNLOAD)
 			{
-				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 				sendLogMessage(logMsg);
 
 				recv(conn_sock, &bufferSize, 4, 0);
@@ -158,6 +189,8 @@ void *handleConnection(void *arg)
 			}
 		}
 	}
+	free(buffer);
+	free(thrash);
 
 	return NULL;
 }
@@ -249,6 +282,14 @@ int initServer()
 		return -1;
 	}
 
+	stdin_ev.events = EPOLLIN;
+	stdin_ev.data.fd = STDIN_FILENO;
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, STDIN_FILENO, &stdin_ev) == -1)
+	{
+		perror("epoll_ctl: stdin");
+		return -1;
+	}
+
 	initFileSystem();
 
 	return 0;
@@ -302,7 +343,6 @@ int download(char *filePath)
 	int size = lseek(fd, 0, SEEK_END);
 	lseek(fd, 0, SEEK_SET);
 	char *content = (char *)malloc(size);
-	printf("current pos in file: %d\n", lseek(fd, 0, SEEK_CUR));
 
 	send(conn_sock, &status, 4, 0);
 	send(conn_sock, ";", 1, 0);
@@ -317,12 +357,15 @@ int download(char *filePath)
 
 void listenForConnection()
 {
-	while (1)
+	while (isRunning)
 	{
 		nfds = epoll_wait(epollfd, events, MAX_EPOLLEVENTS, -1);
 		if (nfds == -1)
 		{
 			perror("epoll_wait");
+			pthread_mutex_lock(&isRunningMutex);
+			isRunning = 0;
+			pthread_mutex_unlock(&isRunningMutex);
 			exit(1);
 		}
 
@@ -366,7 +409,11 @@ void listenForConnection()
 				}
 				else
 				{
-					printf("Received: %s\n", buffer);
+					buffer[n] = '\0';
+					if (strcmp(buffer, "EXIT\n") == 0)
+					{
+						endServer();
+					}
 				}
 			}
 		}
@@ -396,10 +443,7 @@ int main(int agc, char **argv)
 	struct tm tm = *localtime(&t);
 	char logMsg[100];
 	memset(logMsg, 0, 100);
-	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tServer started\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-	sendLogMessage(logMsg);
 
-	pthread_t logging_thread;
 	if (pthread_create(&logging_thread, NULL, loggingThread, NULL) != 0)
 	{
 		perror("pthread_create(logging_thread)");
@@ -408,19 +452,24 @@ int main(int agc, char **argv)
 
 	if (initServer() == -1)
 	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tFailed to initialize server\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+		sendLogMessage(logMsg);
 		printf("Failed to initialize server\n");
 		return -1;
 	}
+
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tServer started\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	sendLogMessage(logMsg);
 	printf("Server initialized\n");
 
 	listenForConnection();
 
-	pthread_join(logging_thread, NULL);
 	if (logfd != -1)
 	{
 		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tServer closed\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 		sendLogMessage(logMsg);
 		close(logfd);
 	}
+
 	return 0;
 }

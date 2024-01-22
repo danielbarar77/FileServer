@@ -276,6 +276,7 @@ int main(int argc, char **argv)
 		}
 		if (strncmp(command, "EXIT", 4) == 0)
 		{
+			close(server_sock);
 			break;
 		}
 		reciveData();
