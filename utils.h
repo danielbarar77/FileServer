@@ -41,5 +41,10 @@
 #define SUCCESS 0x0
 #define FILE_NOT_FOUND 0x1
 #define PERMISSION_DENIED 0x2
+#define OUT_OF_MEMEORY 0x4
+#define SERVER_BUSY 0x8
+#define UNKNOWN_OPERATION 0x10
+#define BAD_ARGUMENTS 0x20
+#define OTHER_ERROR 0x40
 
 #endif

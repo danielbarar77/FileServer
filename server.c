@@ -172,34 +172,11 @@ void *handleConnection(void *arg)
 			}
 			else if (code == DOWNLOAD)
 			{
-				recv(conn_sock, &bufferSize, 4, 0);
-				recv(conn_sock, thrash, 1, 0);
-				memset(buffer, 0, 100);
-				recv(conn_sock, buffer, bufferSize, 0);
-				recv(conn_sock, thrash, 1, 0);
-				status = download(buffer);
-				if (status != SUCCESS)
-				{
-					write(conn_sock, &status, 4);
-					write(conn_sock, ";", 1);
-					if (status == FILE_NOT_FOUND)
-					{
-						sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
-					}
-					else if (status == PERMISSION_DENIED)
-					{
-						sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tPERMISSION_DENIED\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
-					}
-					else
-					{
-						sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tUNKNOWN_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
-					}
-				}
-				else
-				{
-					sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
-				}
-				sendLogMessage(logMsg);
+				download();
+			}
+			else if (code == UPLOAD)
+			{
+				upload();
 			}
 		}
 	}
@@ -353,28 +330,57 @@ void list(fileSystem *parent)
 	}
 }
 
-int download(char *filePath)
+void download()
 {
+	char logMsg[100];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	char thrash[1];
+	char filePath[100];
+	memset(filePath, 0, 100);
+	int bufferSize;
+	uint32_t status = SUCCESS;
+
+	recv(conn_sock, &bufferSize, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	memset(filePath, 0, 100);
+	recv(conn_sock, filePath, bufferSize, 0);
+	recv(conn_sock, thrash, 1, 0);
+
 	int accessStat = access(filePath, F_OK);
 	if (accessStat == -1)
 	{
-		return FILE_NOT_FOUND;
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = FILE_NOT_FOUND;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
 	}
 	accessStat = access(filePath, R_OK);
 	if (accessStat == -1)
 	{
-		return PERMISSION_DENIED;
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tPERMISSION_DENIED\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = PERMISSION_DENIED;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
 	}
 
 	int fd = open(filePath, O_RDONLY);
 	if (fd == -1)
 	{
-		return FILE_NOT_FOUND;
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = FILE_NOT_FOUND;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
 	}
-	uint32_t status = SUCCESS;
 	int size = lseek(fd, 0, SEEK_END);
 	lseek(fd, 0, SEEK_SET);
-	char *content = (char *)malloc(size);
+	status = SUCCESS;
 
 	send(conn_sock, &status, 4, 0);
 	send(conn_sock, ";", 1, 0);
@@ -385,6 +391,82 @@ int download(char *filePath)
 	close(fd);
 
 	return SUCCESS;
+}
+
+void upload()
+{
+	char logMsg[100];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	uint32_t status = SUCCESS;
+
+	char thrash[1];
+	char filePath[100];
+	memset(filePath, 0, 100);
+
+	uint32_t len;
+	recv(conn_sock, &len, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	recv(conn_sock, filePath, len, 0);
+	recv(conn_sock, thrash, 1, 0);
+
+	int accessStat = access(filePath, F_OK);
+	if (accessStat == 0)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tPERMISSION_DENIED(File already exists)\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = PERMISSION_DENIED;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+
+	int fd = open(filePath, O_WRONLY | O_CREAT, 0666);
+	if (fd == -1)
+	{
+		if (errno == EDQUOT)
+		{
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOUT_OF_MEMORY\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sendLogMessage(logMsg);
+			status = OUT_OF_MEMEORY;
+			send(conn_sock, &status, 4, 0);
+			send(conn_sock, ";", 1, 0);
+			return;
+		}
+		else
+		{
+			sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+			sendLogMessage(logMsg);
+			status = OTHER_ERROR;
+			send(conn_sock, &status, 4, 0);
+			send(conn_sock, ";", 1, 0);
+			return;
+		}
+	}
+
+	recv(conn_sock, &len, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	char *content = (char *)malloc(len);
+	recv(conn_sock, content, len, 0);
+	recv(conn_sock, thrash, 1, 0);
+	int wc = write(fd, content, len);
+	if (wc == -1)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		status = OTHER_ERROR;
+		send(conn_sock, &status, 4, 0);
+		send(conn_sock, ";", 1, 0);
+		return;
+	}
+	close(fd);
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+	sendLogMessage(logMsg);
+
+	status = SUCCESS;
+	send(conn_sock, &status, 4, 0);
+	send(conn_sock, ";", 1, 0);
+	return;
 }
 
 void listenForConnection()
