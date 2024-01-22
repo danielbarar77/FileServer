@@ -267,6 +267,31 @@ void reciveData()
 			printf("Permission denied !\n");
 		}
 	}
+	else if (lastCommand == UPLOAD)
+	{
+		recv(server_sock, &status, 4, 0);
+		recv(server_sock, thrash, 1, 0);
+		if (status == SUCCESS)
+		{
+			printf("Success !\n");
+		}
+		else if (status == FILE_NOT_FOUND)
+		{
+			printf("File not found !\n");
+		}
+		else if (status == PERMISSION_DENIED)
+		{
+			printf("Permission denied !\n");
+		}
+		else if (status == OUT_OF_MEMEORY)
+		{
+			printf("Out of memory !\n");
+		}
+		else if (status == OTHER_ERROR)
+		{
+			printf("Other error !\n");
+		}
+	}
 }
 
 int main(int argc, char **argv)

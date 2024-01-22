@@ -34,8 +34,8 @@ LogBuffer logBuffer = {{0}, PTHREAD_MUTEX_INITIALIZER, 0};
 
 char bufferToSend[1024];
 int bufferToSendSize = 0;
-
 int logfd;
+char fileName[100]; // name of the file to be uploaded
 
 void endServer()
 {
@@ -58,6 +58,7 @@ void endServer()
 		close(conn_sock);
 		close(epollfd);
 		close(logfd);
+		EmptyTree(&root);
 	}
 	pthread_mutex_unlock(&isRunningMutex);
 
@@ -186,7 +187,7 @@ void *handleConnection(void *arg)
 	return NULL;
 }
 
-void UpdateList(char *folder, fileSystem *parent)
+void UpdateTree(char *folder, fileSystem *parent)
 {
 	DIR *dir;
 	struct dirent *file;
@@ -215,7 +216,7 @@ void UpdateList(char *folder, fileSystem *parent)
 			if (file->d_type == DT_DIR)
 			{
 				parent->children[parent->childrenCount]->isFile = 0;
-				UpdateList(path, parent->children[parent->childrenCount]);
+				UpdateTree(path, parent->children[parent->childrenCount]);
 			}
 			else
 			{
@@ -228,10 +229,67 @@ void UpdateList(char *folder, fileSystem *parent)
 	closedir(dir);
 }
 
+void EmptyTree(fileSystem *parent)
+{
+	for (int i = 0; i < parent->childrenCount; i++)
+	{
+		if (parent->children[i]->isFile == 0)
+		{
+			EmptyTree(parent->children[i]);
+		}
+		free(parent->children[i]);
+	}
+	free(parent->children);
+	parent->children = NULL;
+	parent->childrenCount = 0;
+}
+
+void AddFileToTree(char *path, fileSystem *parent)
+{
+	parent->children = (fileSystem **)realloc(parent->children, (parent->childrenCount + 1) * sizeof(fileSystem *));
+	parent->children[parent->childrenCount] = (fileSystem *)malloc(sizeof(fileSystem));
+
+	parent->children[parent->childrenCount]->parent = parent;
+	strcpy(parent->children[parent->childrenCount]->path, path);
+	parent->children[parent->childrenCount]->children = NULL;
+	parent->children[parent->childrenCount]->childrenCount = 0;
+	parent->children[parent->childrenCount]->isFile = 1;
+	parent->childrenCount++;
+}
+
+void RemoveFileFromTree(char *path, fileSystem *parent)
+{
+	int index = -1;
+	for (int i = 0; i < parent->childrenCount; i++)
+	{
+		if (strcmp(parent->children[i]->path, path) == 0)
+		{
+			index = i;
+			break;
+		}
+	}
+	if (index == -1)
+	{
+		return;
+	}
+	free(parent->children[index]);
+	for (int i = index; i < parent->childrenCount - 1; i++)
+	{
+		parent->children[i] = parent->children[i + 1];
+	}
+	parent->childrenCount--;
+	parent->children = (fileSystem **)realloc(parent->children, parent->childrenCount * sizeof(fileSystem *));
+}
+
 void initFileSystem()
 {
 	char *rootName = "./root";
-	UpdateList(rootName, &root);
+	root.children = NULL;
+	root.childrenCount = 0;
+	root.isFile = 0;
+	root.parent = NULL;
+	strcpy(root.path, rootName);
+	UpdateTree(rootName, &root);
 }
 
 int initServer()
@@ -286,17 +344,17 @@ int initServer()
 	return 0;
 }
 
-void getFileName(char *command)
+void getFileName(char *buffer)
 {
-	// // get the filename from the path
-	// int len = strlen(command);
-	// int i = len - 1;
-	// while (command[i] != '/')
-	// {
-	// 	i--;
-	// }
-	// memcpy(fileName, command + i + 1, len - i - 1);
-	// fileName[len - i - 1] = '\0';
+	// get the filename from the path
+	int len = strlen(buffer);
+	int i = len - 1;
+	while (buffer[i] != '/' && i >= 0)
+	{
+		i--;
+	}
+	memcpy(fileName, buffer + i + 1, len - i - 1);
+	fileName[len - i - 1] = '\0';
 }
 
 void list(fileSystem *parent)
@@ -401,14 +459,21 @@ void upload()
 	uint32_t status = SUCCESS;
 
 	char thrash[1];
+	char buffer[100];
+	memset(buffer, 0, 100);
 	char filePath[100];
 	memset(filePath, 0, 100);
 
 	uint32_t len;
 	recv(conn_sock, &len, 4, 0);
 	recv(conn_sock, thrash, 1, 0);
-	recv(conn_sock, filePath, len, 0);
+	recv(conn_sock, buffer, len, 0);
 	recv(conn_sock, thrash, 1, 0);
+
+	getFileName(buffer);
+	sprintf(filePath, "%s/%s", root.path, fileName);
+	memset(buffer, 0, 100);
+	memset(fileName, 0, 100);
 
 	int accessStat = access(filePath, F_OK);
 	if (accessStat == 0)
@@ -460,6 +525,9 @@ void upload()
 		return;
 	}
 	close(fd);
+
+	AddFileToTree(filePath, &root);
+
 	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPLOAD\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 	sendLogMessage(logMsg);
 
@@ -585,12 +653,7 @@ int main(int agc, char **argv)
 
 	listenForConnection();
 
-	if (logfd != -1)
-	{
-		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tServer closed\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-		sendLogMessage(logMsg);
-		close(logfd);
-	}
+	endServer();
 
 	return 0;
 }
