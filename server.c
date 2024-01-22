@@ -156,7 +156,7 @@ void *handleConnection(void *arg)
 			memset(logMsg, 0, 100);
 			if (code == LIST)
 			{
-				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\t\tClient:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
 				sendLogMessage(logMsg);
 
 				list(&root);
@@ -172,9 +172,6 @@ void *handleConnection(void *arg)
 			}
 			else if (code == DOWNLOAD)
 			{
-				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
-				sendLogMessage(logMsg);
-
 				recv(conn_sock, &bufferSize, 4, 0);
 				recv(conn_sock, thrash, 1, 0);
 				memset(buffer, 0, 100);
@@ -185,7 +182,24 @@ void *handleConnection(void *arg)
 				{
 					write(conn_sock, &status, 4);
 					write(conn_sock, ";", 1);
+					if (status == FILE_NOT_FOUND)
+					{
+						sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tFILE_NOT_FOUND\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+					}
+					else if (status == PERMISSION_DENIED)
+					{
+						sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tPERMISSION_DENIED\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+					}
+					else
+					{
+						sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tUNKNOWN_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+					}
 				}
+				else
+				{
+					sprintf(logMsg, "%d-%d-%d %d:%d:%d\tDOWNLOAD\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+				}
+				sendLogMessage(logMsg);
 			}
 		}
 	}
@@ -328,7 +342,12 @@ void list(fileSystem *parent)
 
 int download(char *filePath)
 {
-	int accessStat = access(filePath, R_OK);
+	int accessStat = access(filePath, F_OK);
+	if (accessStat == -1)
+	{
+		return FILE_NOT_FOUND;
+	}
+	accessStat = access(filePath, R_OK);
 	if (accessStat == -1)
 	{
 		return PERMISSION_DENIED;
