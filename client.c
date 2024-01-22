@@ -68,12 +68,11 @@ char *intToChar(int num)
 
 int checkExistanceFile(char *filepath)
 {
-	int fd = open(filepath, O_RDONLY);
-	if (fd == -1)
+	int accessStatus = access(filepath, F_OK);
+	if (accessStatus == -1)
 	{
 		return 0;
 	}
-	close(fd);
 	return 1;
 }
 
@@ -84,20 +83,52 @@ void list()
 	send(server_sock, ";", 1, 0);
 }
 
-void download(char *command)
+void download(char *filePath)
 {
 	uint32_t code = DOWNLOAD;
 	send(server_sock, &code, 4, 0);
 	send(server_sock, ";", 1, 0);
-	uint32_t lenPath = strlen(command);
+	uint32_t lenPath = strlen(filePath);
 	send(server_sock, &lenPath, 4, 0);
 	send(server_sock, ";", 1, 0);
-	send(server_sock, command, lenPath, 0);
+	send(server_sock, filePath, lenPath, 0);
 	send(server_sock, ";", 1, 0);
 }
 
-void upload(char *command, int dimension, char *pathname)
+void upload(char *filePath)
 {
+	if (checkExistanceFile(filePath) == 0)
+	{
+		printf("File not found !\n");
+		return;
+	}
+	uint32_t code = UPLOAD;
+	send(server_sock, &code, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	uint32_t len = strlen(filePath);
+	send(server_sock, &len, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	send(server_sock, filePath, len, 0);
+	send(server_sock, ";", 1, 0);
+
+	int fd = open(filePath, O_RDONLY);
+	if (fd == -1)
+	{
+		perror("open");
+		return -1;
+	}
+	len = lseek(fd, 0, SEEK_END);
+	lseek(fd, 0, SEEK_SET);
+
+	send(server_sock, &len, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	sendfile(server_sock, fd, NULL, len);
+	send(server_sock, ";", 1, 0);
+
+	close(fd);
 }
 
 void delete(char *command, int dimension)
@@ -117,7 +148,7 @@ void getFileName(char *command)
 	fileName[len - i - 1] = '\0';
 }
 
-char *getCode(char *input)
+char *executeCommand(char *input)
 {
 	char *command = (char *)malloc(100);
 	int dimension = 0;
@@ -145,50 +176,20 @@ char *getCode(char *input)
 	}
 	else if (strcmp(token, "UPLOAD") == 0)
 	{
-		memcpy(command, intToChar(0x2), 4);
-		command[4] = ';';
-		dimension += 5;
+		lastCommand = UPLOAD;
 		token = strtok(NULL, " \n\0");
 		if (token == NULL)
 		{
 			printf("Invalid command\n");
 			return NULL;
 		}
-		if (checkExistanceFile(token) == 0)
-		{
-			printf("File doesn't exist\n");
-			return NULL;
-		}
-		int len = strlen(token);
-		char *pathname = (char *)malloc(len);
-		memcpy(pathname, token, len);
-		memcpy(command + dimension, intToChar(len), 4);
-		dimension += 4;
-		command[dimension++] = ';';
-		memcpy(command + dimension, token, len);
-		dimension += len;
-		command[dimension++] = ';';
-		upload(command, dimension, pathname);
+		upload(token);
 	}
 	else if (strcmp(token, "DELETE") == 0)
 	{
-		memcpy(command, intToChar(0x4), 4);
-		command[4] = ';';
-		dimension += 5;
-		token = strtok(NULL, " \n\0");
-		if (token == NULL)
-		{
-			printf("Invalid command\n");
-			return NULL;
-		}
-		int len = strlen(token);
-		memcpy(command + dimension, intToChar(len), 4);
-		dimension += 4;
-		command[dimension++] = ';';
-		memcpy(command + dimension, token, len);
-		dimension += len;
-		command[dimension++] = ';';
-		delete (command, dimension);
+		memcpy(command, intToChar(0x8), 4);
+		printf("Not implemented yet!\n");
+		return NULL;
 	}
 	else if (strcmp(token, "MOVE") == 0)
 	{
@@ -280,7 +281,7 @@ int main(int argc, char **argv)
 	while (1)
 	{
 		input = menu();
-		command = getCode(input);
+		command = executeCommand(input);
 		if (command == NULL)
 		{
 			continue;

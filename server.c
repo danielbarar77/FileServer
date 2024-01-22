@@ -309,6 +309,19 @@ int initServer()
 	return 0;
 }
 
+void getFileName(char *command)
+{
+	// // get the filename from the path
+	// int len = strlen(command);
+	// int i = len - 1;
+	// while (command[i] != '/')
+	// {
+	// 	i--;
+	// }
+	// memcpy(fileName, command + i + 1, len - i - 1);
+	// fileName[len - i - 1] = '\0';
+}
+
 void list(fileSystem *parent)
 {
 	// print list of directories and files like ls -R
