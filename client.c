@@ -33,7 +33,7 @@ int createConnection()
 
 void printMenu()
 {
-	printf("\n\n");
+	printf("\n");
 	printf("=====================================\n");
 	printf("Choose an option:\n");
 	printf("EXIT\n");
@@ -42,7 +42,7 @@ void printMenu()
 	printf("UPLOAD <filepath>\n");
 	printf("DELETE <filepath>\n");
 	printf("MOVE <oldpath> <newpath>\n");
-	printf("UPDATE <filepath> <start offset> <content dimension> <content>\n");
+	printf("UPDATE <filepath> <start offset> <content>\n");
 	printf("SEARCH <word>\n");
 	printf("COMMAND: ");
 }
@@ -53,6 +53,7 @@ char *menu()
 	char *input = (char *)malloc(100);
 	fgets(input, 100, stdin);
 	input[strlen(input) - 1] = '\0';
+	printf("\n");
 	return input;
 }
 
@@ -166,6 +167,30 @@ void move(char *oldPath, char *newPath)
 	send(server_sock, ";", 1, 0);
 }
 
+void update(char *filePath, int startOffset, char *content)
+{
+	uint32_t code = UPDATE;
+	send(server_sock, &code, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	uint32_t len = strlen(filePath);
+	send(server_sock, &len, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	send(server_sock, filePath, len, 0);
+	send(server_sock, ";", 1, 0);
+
+	send(server_sock, &startOffset, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	len = strlen(content);
+	send(server_sock, &len, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	send(server_sock, content, len, 0);
+	send(server_sock, ";", 1, 0);
+}
+
 void getFileName(char *command)
 {
 	// get the filename from the path
@@ -202,6 +227,7 @@ char *executeCommand(char *input)
 			printf("Invalid command\n");
 			return NULL;
 		}
+		token[strlen(token)] = '\0';
 		getFileName(token);
 		download(token);
 	}
@@ -214,6 +240,7 @@ char *executeCommand(char *input)
 			printf("Invalid command\n");
 			return NULL;
 		}
+		token[strlen(token)] = '\0';
 		upload(token);
 	}
 	else if (strcmp(token, "DELETE") == 0)
@@ -225,6 +252,7 @@ char *executeCommand(char *input)
 			printf("Invalid command\n");
 			return NULL;
 		}
+		token[strlen(token)] = '\0';
 		deleteFile(token);
 	}
 	else if (strcmp(token, "MOVE") == 0)
@@ -248,9 +276,30 @@ char *executeCommand(char *input)
 	}
 	else if (strcmp(token, "UPDATE") == 0)
 	{
-		printf("Not implemented yet!\n");
-		memcpy(command, intToChar(0x10), 4);
-		return NULL;
+		lastCommand = UPDATE;
+		char *filePath = strtok(NULL, " \n\0");
+		if (filePath == NULL)
+		{
+			printf("Invalid command\n");
+			return NULL;
+		}
+		filePath[strlen(filePath)] = '\0';
+		char *buffOffset = strtok(NULL, " \n\0");
+		if (buffOffset == NULL)
+		{
+			printf("Invalid command\n");
+			return NULL;
+		}
+		buffOffset[strlen(buffOffset)] = '\0';
+		int startOffset = atoi(buffOffset);
+		char *content = strtok(NULL, "\n");
+		if (content == NULL)
+		{
+			printf("Invalid command\n");
+			return NULL;
+		}
+		content[strlen(content)] = '\0';
+		update(filePath, startOffset, content);
 	}
 	else if (strcmp(token, "SEARCH") == 0)
 	{
@@ -363,6 +412,27 @@ void reciveData()
 		}
 	}
 	else if (lastCommand == MOVE)
+	{
+		recv(server_sock, &status, 4, 0);
+		recv(server_sock, thrash, 1, 0);
+		if (status == SUCCESS)
+		{
+			printf("Success !\n");
+		}
+		else if (status == FILE_NOT_FOUND)
+		{
+			printf("File not found !\n");
+		}
+		else if (status == PERMISSION_DENIED)
+		{
+			printf("Permission denied !\n");
+		}
+		else if (status == OTHER_ERROR)
+		{
+			printf("Other error !\n");
+		}
+	}
+	else if (lastCommand == UPDATE)
 	{
 		recv(server_sock, &status, 4, 0);
 		recv(server_sock, thrash, 1, 0);
