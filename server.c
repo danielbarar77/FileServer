@@ -2,6 +2,7 @@
 
 int isRunning = 1;
 pthread_mutex_t isRunningMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t updateMutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct epoll_event stdin_ev;
 struct epoll_event ev, events[MAX_EPOLLEVENTS];
@@ -518,6 +519,9 @@ void upload()
 		status = PERMISSION_DENIED;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(buffer);
+		free(filePath);
+		free(content);
 		return;
 	}
 
@@ -531,6 +535,9 @@ void upload()
 			status = OUT_OF_MEMEORY;
 			send(conn_sock, &status, 4, 0);
 			send(conn_sock, ";", 1, 0);
+			free(buffer);
+			free(filePath);
+			free(content);
 			return;
 		}
 		else
@@ -540,6 +547,9 @@ void upload()
 			status = OTHER_ERROR;
 			send(conn_sock, &status, 4, 0);
 			send(conn_sock, ";", 1, 0);
+			free(buffer);
+			free(filePath);
+			free(content);
 			return;
 		}
 	}
@@ -552,6 +562,9 @@ void upload()
 		status = OTHER_ERROR;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(buffer);
+		free(filePath);
+		free(content);
 		return;
 	}
 	close(fd);
@@ -751,6 +764,8 @@ void update()
 	recv(conn_sock, thrash, 1, 0);
 	content[len] = '\0';
 
+	pthread_mutex_lock(&updateMutex);
+
 	if (access(filePath, F_OK) == -1)
 	{
 		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPDATE\t\tClient:%d\tFILE_NOT_FOUND\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
@@ -758,6 +773,9 @@ void update()
 		status = FILE_NOT_FOUND;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(content);
+		free(filePath);
+		pthread_mutex_unlock(&updateMutex);
 		return;
 	}
 	if (access(filePath, W_OK) == -1)
@@ -767,6 +785,9 @@ void update()
 		status = PERMISSION_DENIED;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(content);
+		free(filePath);
+		pthread_mutex_unlock(&updateMutex);
 		return;
 	}
 
@@ -778,6 +799,9 @@ void update()
 		status = OTHER_ERROR;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(content);
+		free(filePath);
+		pthread_mutex_unlock(&updateMutex);
 		return;
 	}
 
@@ -788,6 +812,9 @@ void update()
 		status = OTHER_ERROR;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(content);
+		free(filePath);
+		pthread_mutex_unlock(&updateMutex);
 		return;
 	}
 	if (offset > lseek(fd, 0, SEEK_END))
@@ -803,9 +830,14 @@ void update()
 		status = OTHER_ERROR;
 		send(conn_sock, &status, 4, 0);
 		send(conn_sock, ";", 1, 0);
+		free(content);
+		free(filePath);
+		pthread_mutex_unlock(&updateMutex);
 		return;
 	}
 	close(fd);
+	pthread_mutex_unlock(&updateMutex);
+
 	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPDATE\t\tClient:%d\tSUCCESS\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 	sendLogMessage(logMsg);
 
