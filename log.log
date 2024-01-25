@@ -109,3 +109,96 @@
 2024-1-25 21:43:33	SEARCH		Client:7	OTHER_ERROR	WORD: asdgf
 2024-1-25 21:43:41	Connection closed:7
 2024-1-25 21:43:42	Server closed
+2024-1-25 22:26:18	Server started
+2024-1-25 22:26:18	Connection accepted:7
+2024-1-25 22:26:21	LIST		Client:7	SUCCESS
+2024-1-25 22:27:5	Connection closed:7
+2024-1-25 22:26:18	Connection accepted:7
+2024-1-25 22:27:11	LIST		Client:7	SUCCESS
+2024-1-25 22:28:1	Server started
+2024-1-25 22:28:1	Connection accepted:7
+2024-1-25 22:28:27	UPLOAD		Client:7	PERMISSION_DENIED(File already exists)	./root/local.txt
+2024-1-25 22:29:2	UPLOAD		Client:7	PERMISSION_DENIED(File already exists)	./root/local.txt
+2024-1-25 22:29:4	LIST		Client:7	SUCCESS
+2024-1-25 22:29:18	DELETE		Client:7	SUCCESS	./root/local.txt
+2024-1-25 22:29:20	LIST		Client:7	SUCCESS
+2024-1-25 22:29:25	Connection closed:7
+2024-1-25 22:29:26	Server closed
+2024-1-25 22:29:55	Server started
+2024-1-25 22:29:55	Connection accepted:7
+2024-1-25 22:30:1	LIST		Client:7	SUCCESS
+2024-1-25 22:31:4	Server started
+2024-1-25 22:31:4	Connection accepted:7
+2024-1-25 22:31:13	UPLOAD		Client:7	PERMISSION_DENIED(File already exists)	./root/local.txt
+2024-1-25 22:31:16	LIST		Client:7	SUCCESS
+2024-1-25 22:31:29	DELETE		Client:7	SUCCESS	./root/local.txt
+2024-1-25 22:32:8	Server started
+2024-1-25 22:32:8	Connection accepted:7
+2024-1-25 22:32:17	LIST		Client:7	SUCCESS
+2024-1-25 22:32:22	DELETE		Client:7	SUCCESS	./local.txt
+2024-1-25 22:32:53	Connection closed:7
+2024-1-25 22:32:55	Server closed
+2024-1-25 22:32:59	Server started
+2024-1-25 22:32:59	Connection accepted:7
+2024-1-25 22:33:3	LIST		Client:7	SUCCESS
+2024-1-25 22:33:7	DELETE		Client:7	SUCCESS	local.txt
+2024-1-25 22:33:10	LIST		Client:7	SUCCESS
+2024-1-25 22:33:36	Connection closed:7
+2024-1-25 22:33:39	Server closed
+2024-1-25 22:33:40	Server started
+2024-1-25 22:33:40	Connection accepted:7
+2024-1-25 22:33:45	LIST		Client:7	SUCCESS
+2024-1-25 22:33:56	DELETE		Client:7	SUCCESS	./root/local.txt
+2024-1-25 22:33:58	LIST		Client:7	SUCCESS
+2024-1-25 22:34:25	Connection closed:7
+2024-1-25 22:34:29	Server closed
+2024-1-25 22:34:35	Server started
+2024-1-25 22:34:35	Connection accepted:7
+2024-1-25 22:35:9	Server started
+2024-1-25 22:35:9	Connection accepted:7
+2024-1-25 22:35:21	LIST		Client:7	SUCCESS
+2024-1-25 22:35:38	Server started
+2024-1-25 22:35:38	Connection accepted:7
+2024-1-25 22:35:45	UPLOAD		Client:7	PERMISSION_DENIED(File already exists)	./root/local.txt
+2024-1-25 22:35:49	Connection closed:7
+2024-1-25 22:35:51	Server closed
+2024-1-25 22:36:19	Server started
+2024-1-25 22:36:19	Connection accepted:7
+2024-1-25 22:36:22	LIST		Client:7	SUCCESS
+2024-1-25 22:53:31	Server started
+2024-1-25 22:53:31	Connection accepted:7
+2024-1-25 22:53:40	LIST		Client:7	SUCCESS
+2024-1-25 22:53:47	UPLOAD		Client:7	SUCCESS	./root/local.txt
+2024-1-25 22:53:49	LIST		Client:7	SUCCESS
+2024-1-25 22:54:35	UPDATE		Client:7	SUCCESS	local.txt
+2024-1-25 22:54:38	LIST		Client:7	SUCCESS
+2024-1-25 22:55:5	LIST		Client:7	SUCCESS
+2024-1-25 22:55:52	MOVE		Client:7	SUCCESS	./root/local.txt	./root/dirTest/newLocal.txt
+2024-1-25 22:55:54	LIST		Client:7	SUCCESS
+2024-1-25 22:56:9	DOWNLOAD	Client:7	SUCCESS	./root/dirTest/newLocal.txt
+2024-1-25 22:56:12	LIST		Client:7	SUCCESS
+2024-1-25 22:56:24	SEARCH		Client:7	SUCCESS	WORD: IN:
+2024-1-25 22:56:32	SEARCH		Client:7	SUCCESS	WORD: mare
+2024-1-25 22:57:35	UPDATE		Client:7	SUCCESS	./root/test.txt
+2024-1-25 22:57:42	SEARCH		Client:7	SUCCESS	WORD: mama
+2024-1-25 22:58:8	LIST		Client:7	SUCCESS
+2024-1-25 22:58:41	DELETE		Client:7	FILE_NOT_FOUND	./dirTest/newLocal.txt
+2024-1-25 22:58:52	DELETE		Client:7	SUCCESS	./root/dirTest/newLocal.txt
+2024-1-25 22:58:54	LIST		Client:7	SUCCESS
+2024-1-25 22:58:59	SEARCH		Client:7	SUCCESS	WORD: sa
+2024-1-25 22:59:2	Connection closed:7
+2024-1-25 22:59:6	Server closed
+2024-1-25 23:0:23	Server started
+2024-1-25 23:0:23	Connection accepted:7
+2024-1-25 23:0:27	LIST		Client:7	SUCCESS
+2024-1-25 23:0:38	UPLOAD		Client:7	SUCCESS	./root/local.txt
+2024-1-25 23:0:41	LIST		Client:7	SUCCESS
+2024-1-25 23:1:27	UPDATE		Client:7	SUCCESS	./root/local.txt
+2024-1-25 23:1:51	Server started
+2024-1-25 23:1:51	Connection accepted:7
+2024-1-25 23:1:54	LIST		Client:7	SUCCESS
+2024-1-25 23:2:12	UPDATE		Client:7	SUCCESS	./root/local.txt
+2024-1-25 23:2:29	SEARCH		Client:7	SUCCESS	WORD: Ana
+2024-1-25 23:2:40	SEARCH		Client:7	SUCCESS	WORD: are
+2024-1-25 23:2:48	SEARCH		Client:7	SUCCESS	WORD: sa
+2024-1-25 23:2:53	Connection closed:7

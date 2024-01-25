@@ -3,6 +3,11 @@
 int isRunning = 1;
 pthread_mutex_t isRunningMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t updateMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t newFileMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t newFileCond = PTHREAD_COND_INITIALIZER;
+
+int signalReceived = 0;
+char newFile[256];
 
 struct epoll_event stdin_ev;
 struct epoll_event ev, events[MAX_EPOLLEVENTS];
@@ -13,6 +18,7 @@ struct sockaddr_in server_addr;
 
 pthread_t connections_thread;
 pthread_t logging_thread;
+pthread_t wordFrequency_thread;
 
 typedef struct wordFrequency
 {
@@ -78,6 +84,18 @@ void endServer()
 
 	exit(0);
 }
+
+// void *wordFrequencyThread(void *arg)
+// {
+// 	// thread that updates the word frequency in the file system
+// 	while (isRunning)
+// 	{
+// 		pthread_mutex_lock(&newFileMutex);
+// 		if (signa)
+// 			pthread_mutex_unlock(&newFileMutex);
+// 	}
+// 	return NULL;
+// }
 
 void *loggingThread(void *arg)
 {
@@ -204,6 +222,24 @@ int compare(const void *a, const void *b)
 	wordFrequency *wordA = (wordFrequency *)a;
 	wordFrequency *wordB = (wordFrequency *)b;
 	return wordB->frequency - wordA->frequency;
+}
+
+void findTopFrequencyWordsInNewFile(char *newFilePath, fileSystem *parent)
+{
+	if (parent->isFile == 0)
+	{
+		for (int i = 0; i < parent->childrenCount; i++)
+		{
+			findTopFrequencyWordsInNewFile(newFilePath, parent->children[i]);
+		}
+	}
+	else
+	{
+		if (strcmp(parent->path, newFilePath) == 0)
+		{
+			findTopFrequencyWords(parent);
+		}
+	}
 }
 
 void findTopFrequencyWords(fileSystem *parent)
@@ -953,6 +989,9 @@ void update()
 	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tUPDATE\t\tClient:%d\tSUCCESS\t%s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, filePath);
 	sendLogMessage(logMsg);
 
+	EmptyTree(&root);
+	initFileSystem();
+
 	status = SUCCESS;
 	send(conn_sock, &status, 4, 0);
 	send(conn_sock, ";", 1, 0);
@@ -1144,6 +1183,12 @@ int main(int agc, char **argv)
 		perror("pthread_create(logging_thread)");
 		return -1;
 	}
+
+	// if (pthread_create(&wordFrequency_thread, NULL, wordFrequencyThread, NULL) != 0)
+	// {
+	// 	perror("pthread_create(wordFrequency_thread)");
+	// 	return -1;
+	// }
 
 	if (initServer() == -1)
 	{
