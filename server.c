@@ -6,6 +6,7 @@ pthread_mutex_t updateMutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct epoll_event stdin_ev;
 struct epoll_event ev, events[MAX_EPOLLEVENTS];
+struct epoll_event signal_ev;
 int listen_sock, conn_sock, nfds, epollfd;
 
 struct sockaddr_in server_addr;
@@ -38,12 +39,15 @@ int bufferToSendSize = 0;
 int logfd;
 char fileName[100]; // name of the file to be uploaded
 
+int signal_fd;
+
 void endServer()
 {
 	char logMsg[100];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 
+	// graceful termination - waits for all threads to finish
 	pthread_mutex_lock(&isRunningMutex);
 	if (isRunning)
 	{
@@ -52,6 +56,7 @@ void endServer()
 		printf("Closing server\n");
 		isRunning = 0;
 
+		// wait for all the connections to finish
 		pthread_join(connections_thread, NULL);
 		pthread_join(logging_thread, NULL);
 
@@ -66,41 +71,9 @@ void endServer()
 	exit(0);
 }
 
-static void siq_handler(int sig)
-{
-	printf("Received signal %s\n", strsignal(sig));
-
-	if (sig == SIGINT || sig == SIGTERM)
-	{
-		endServer();
-	}
-}
-
-void signalHandler()
-{
-	char logMsg[100];
-	struct sigaction sa;
-	sigset_t mask;
-
-	sigfillset(&mask);
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = siq_handler;
-	sa.sa_mask = mask;
-
-	if (sigaction(SIGINT, &sa, NULL) == -1)
-	{
-		perror("sigaction");
-		exit(1);
-	}
-	if (sigaction(SIGTERM, &sa, NULL) == -1)
-	{
-		perror("sigaction");
-		exit(1);
-	}
-}
-
 void *loggingThread(void *arg)
 {
+	// thread that writes to the log file
 	while (isRunning)
 	{
 		pthread_mutex_lock(&logBuffer.mutex);
@@ -154,19 +127,7 @@ void *handleConnection(void *arg)
 		{
 			if (code == LIST)
 			{
-				sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
-				sendLogMessage(logMsg);
-
-				list(&root);
-				uint32_t status = SUCCESS;
-				write(conn_sock, &status, 4);
-				write(conn_sock, ";", 1);
-				write(conn_sock, &bufferToSendSize, 4);
-				write(conn_sock, ";", 1);
-				send(conn_sock, bufferToSend, bufferToSendSize, 0);
-				write(conn_sock, ";", 1);
-				memset(bufferToSend, 0, 1024);
-				bufferToSendSize = 0;
+				list();
 			}
 			else if (code == DOWNLOAD)
 			{
@@ -353,6 +314,29 @@ int initServer()
 		return -1;
 	}
 
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGTERM);
+	if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
+	{
+		perror("sigprocmask");
+		return -1;
+	}
+	signal_fd = signalfd(-1, &mask, 0);
+	if (signal_fd == -1)
+	{
+		perror("signalfd");
+		return -1;
+	}
+	signal_ev.data.fd = signal_fd;
+	signal_ev.events = EPOLLIN;
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, signal_fd, &signal_ev) == -1)
+	{
+		perror("epoll_ctl: signal_fd");
+		return -1;
+	}
+
 	initFileSystem();
 
 	return 0;
@@ -381,7 +365,7 @@ int checkExistanceFile(char *filepath)
 	return 1;
 }
 
-void list(fileSystem *parent)
+void recursiveMapping(fileSystem *parent)
 {
 	// print list of directories and files like ls -R
 	char aux[256];
@@ -407,9 +391,41 @@ void list(fileSystem *parent)
 	{
 		if (parent->children[i]->isFile == 0)
 		{
-			list(parent->children[i]);
+			recursiveMapping(parent->children[i]);
 		}
 	}
+}
+
+void list()
+{
+	char logMsg[1024];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+
+	recursiveMapping(&root);
+
+	if (bufferToSendSize == 0)
+	{
+		sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\t\tClient:%d\tOTHER_ERROR\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+		sendLogMessage(logMsg);
+		uint32_t status = OTHER_ERROR;
+		write(conn_sock, &status, 4);
+		write(conn_sock, ";", 1);
+		return;
+	}
+
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tLIST\t\tClient:%d\tSUCCESS\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock);
+	sendLogMessage(logMsg);
+
+	uint32_t status = SUCCESS;
+	write(conn_sock, &status, 4);
+	write(conn_sock, ";", 1);
+	write(conn_sock, &bufferToSendSize, 4);
+	write(conn_sock, ";", 1);
+	send(conn_sock, bufferToSend, bufferToSendSize, 0);
+	write(conn_sock, ";", 1);
+	memset(bufferToSend, 0, 1024);
+	bufferToSendSize = 0;
 }
 
 void download()
@@ -849,8 +865,9 @@ void update()
 	return;
 }
 
-void listenForConnection()
+void listenForEvents()
 {
+
 	char logMsg[100];
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
@@ -917,6 +934,24 @@ void listenForConnection()
 					}
 				}
 			}
+			// listen from signalfd
+			else if (events[i].data.fd == signal_fd)
+			{
+				printf("Signal received\n");
+				struct signalfd_siginfo fdsi;
+				ssize_t s;
+				s = read(signal_fd, &fdsi, sizeof(struct signalfd_siginfo));
+				if (s != sizeof(struct signalfd_siginfo))
+				{
+					perror("read");
+					exit(1);
+				}
+				if (fdsi.ssi_signo == SIGINT || fdsi.ssi_signo == SIGTERM)
+				{
+					printf("SIGINT or SIGTERM received\n");
+					endServer();
+				}
+			}
 		}
 	}
 }
@@ -932,7 +967,17 @@ void sendLogMessage(char *message)
 
 int main(int agc, char **argv)
 {
-	signalHandler();
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGTERM);
+	if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1)
+	{
+		perror("sigprocmask");
+		return -1;
+	}
+
+	// signalHandler();
 	logfd = open("log.log", O_WRONLY | O_CREAT | O_APPEND, 0666);
 	if (logfd == -1)
 	{
@@ -963,7 +1008,7 @@ int main(int agc, char **argv)
 	sendLogMessage(logMsg);
 	printf("Server initialized\n");
 
-	listenForConnection();
+	listenForEvents();
 
 	endServer();
 
