@@ -14,6 +14,12 @@ struct sockaddr_in server_addr;
 pthread_t connections_thread;
 pthread_t logging_thread;
 
+typedef struct wordFrequency
+{
+	char word[100];
+	int frequency;
+} wordFrequency;
+
 typedef struct fileSystem
 {
 	char path[100];
@@ -21,6 +27,8 @@ typedef struct fileSystem
 	struct fileSystem *parent;	  // parent directory
 	struct fileSystem **children; // children directories
 	int childrenCount;
+	struct wordFrequency words[10];
+	int wordsCount;
 } fileSystem;
 
 fileSystem root = {"./root", 0, NULL, NULL, 0};
@@ -149,6 +157,10 @@ void *handleConnection(void *arg)
 			{
 				update();
 			}
+			else if (code == SEARCH)
+			{
+				search();
+			}
 			else
 			{
 				status = UNKNOWN_OPERATION;
@@ -162,7 +174,90 @@ void *handleConnection(void *arg)
 	return NULL;
 }
 
-void UpdateTree(char *folder, fileSystem *parent)
+void findWordInFileSystem(char *word, fileSystem *parent)
+{
+	if (parent->isFile == 1)
+	{
+		for (int i = 0; i < parent->wordsCount; i++)
+		{
+			if (strcmp(parent->words[i].word, word) == 0)
+			{
+				char aux[256];
+				memset(aux, 0, 256);
+				sprintf(aux, "%d\t%s\n", parent->words[i].frequency, parent->path);
+				memcpy(bufferToSend + bufferToSendSize, aux, strlen(aux));
+				bufferToSendSize += strlen(aux);
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < parent->childrenCount; i++)
+		{
+			findWordInFileSystem(word, parent->children[i]);
+		}
+	}
+}
+
+int compare(const void *a, const void *b)
+{
+	wordFrequency *wordA = (wordFrequency *)a;
+	wordFrequency *wordB = (wordFrequency *)b;
+	return wordB->frequency - wordA->frequency;
+}
+
+void findTopFrequencyWords(fileSystem *parent)
+{
+	// find the top 10 most frequent words in the file
+	char *buffer = (char *)malloc(4096);
+	wordFrequency tempWords[256];
+	int tempWordsCount = 0;
+	int fd = open(parent->path, O_RDONLY);
+	int n = read(fd, buffer, 4096);
+	buffer[n] = '\0';
+	char *word = strtok(buffer, " \n\t");
+	while (word != NULL)
+	{
+		int found = 0;
+		for (int i = 0; i < tempWordsCount; i++)
+		{
+			if (strcmp(tempWords[i].word, word) == 0)
+			{
+				tempWords[i].frequency++;
+				found = 1;
+				break;
+			}
+		}
+		if (found == 0)
+		{
+			strcpy(tempWords[tempWordsCount].word, word);
+			tempWords[tempWordsCount].frequency = 1;
+			tempWordsCount++;
+		}
+		word = strtok(NULL, " \n\t");
+	}
+
+	qsort(tempWords, tempWordsCount, sizeof(wordFrequency), compare);
+
+	for (int i = 0; i < 10 && i < tempWordsCount; i++)
+	{
+		strcpy(parent->words[i].word, tempWords[i].word);
+		parent->words[i].frequency = tempWords[i].frequency;
+	}
+	if (tempWordsCount < 10)
+	{
+		parent->wordsCount = tempWordsCount;
+	}
+	else
+	{
+		parent->wordsCount = 10;
+	}
+
+	close(fd);
+	free(buffer);
+}
+
+void initTree(char *folder, fileSystem *parent)
 {
 	DIR *dir;
 	struct dirent *file;
@@ -191,11 +286,12 @@ void UpdateTree(char *folder, fileSystem *parent)
 			if (file->d_type == DT_DIR)
 			{
 				parent->children[parent->childrenCount]->isFile = 0;
-				UpdateTree(path, parent->children[parent->childrenCount]);
+				initTree(path, parent->children[parent->childrenCount]);
 			}
 			else
 			{
 				parent->children[parent->childrenCount]->isFile = 1;
+				findTopFrequencyWords(parent->children[parent->childrenCount]);
 			}
 			parent->childrenCount++;
 		}
@@ -263,8 +359,9 @@ void initFileSystem()
 	root.childrenCount = 0;
 	root.isFile = 0;
 	root.parent = NULL;
+	root.wordsCount = 0;
 	strcpy(root.path, rootName);
-	UpdateTree(rootName, &root);
+	initTree(rootName, &root);
 }
 
 int initServer()
@@ -377,7 +474,6 @@ void recursiveMapping(fileSystem *parent)
 	currsor += 3;
 	for (int i = 0; i < parent->childrenCount; i++)
 	{
-		// strcpy(aux + currsor, parent->children[i]->path);
 		memcpy(aux + currsor, parent->children[i]->path, strlen(parent->children[i]->path));
 		currsor += strlen(parent->children[i]->path);
 		memcpy(aux + currsor, "\t\0", 2);
@@ -865,6 +961,61 @@ void update()
 	return;
 }
 
+void search()
+{
+	char logMsg[1024];
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	uint32_t status = SUCCESS;
+	char thrash[1];
+	char *word;
+	uint32_t len;
+
+	recv(conn_sock, &len, 4, 0);
+	recv(conn_sock, thrash, 1, 0);
+	word = (char *)malloc(len);
+	memset(word, 0, len);
+	recv(conn_sock, word, len, 0);
+	recv(conn_sock, thrash, 1, 0);
+	word[len] = '\0';
+
+	memset(bufferToSend, 0, 1024);
+	bufferToSendSize = 0;
+	findWordInFileSystem(word, &root);
+
+	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tSEARCH\t\tClient:%d\tSUCCESS\tWORD: %s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, conn_sock, word);
+	sendLogMessage(logMsg);
+	status = SUCCESS;
+	send(conn_sock, &status, 4, 0);
+	send(conn_sock, ";", 1, 0);
+	send(conn_sock, &bufferToSendSize, 4, 0);
+	send(conn_sock, ";", 1, 0);
+	send(conn_sock, bufferToSend, bufferToSendSize, 0);
+	send(conn_sock, ";", 1, 0);
+	memset(bufferToSend, 0, 1024);
+	bufferToSendSize = 0;
+	free(word);
+	return;
+}
+
+void printWordFrequency(fileSystem *parent)
+{
+	if (parent->isFile == 1)
+	{
+		for (int i = 0; i < parent->wordsCount; i++)
+		{
+			printf("%s: %d\n", parent->words[i].word, parent->words[i].frequency);
+		}
+	}
+	else if (parent->isFile == 0)
+	{
+		for (int i = 0; i < parent->childrenCount; i++)
+		{
+			printWordFrequency(parent->children[i]);
+		}
+	}
+}
+
 void listenForEvents()
 {
 
@@ -1005,6 +1156,8 @@ int main(int agc, char **argv)
 	sprintf(logMsg, "%d-%d-%d %d:%d:%d\tServer started\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 	sendLogMessage(logMsg);
 	printf("Server initialized\n");
+
+	// printWordFrequency(&root);
 
 	listenForEvents();
 

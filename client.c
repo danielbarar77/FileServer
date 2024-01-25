@@ -181,6 +181,20 @@ void update(char *filePath, int startOffset, char *content)
 	send(server_sock, ";", 1, 0);
 }
 
+void search(char *word)
+{
+	uint32_t code = SEARCH;
+	send(server_sock, &code, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	uint32_t len = strlen(word);
+	send(server_sock, &len, 4, 0);
+	send(server_sock, ";", 1, 0);
+
+	send(server_sock, word, len, 0);
+	send(server_sock, ";", 1, 0);
+}
+
 void getFileName(char *command)
 {
 	// get the filename from the path
@@ -293,7 +307,15 @@ char *executeCommand(char *input)
 	}
 	else if (strcmp(token, "SEARCH") == 0)
 	{
-		return NULL;
+		lastCommand = SEARCH;
+		char *word = strtok(NULL, " \n\0");
+		if (word == NULL)
+		{
+			printf("Invalid command\n");
+			return NULL;
+		}
+		word[strlen(word)] = '\0';
+		search(word);
 	}
 	else
 	{
@@ -435,6 +457,32 @@ void reciveData()
 		else if (status == PERMISSION_DENIED)
 		{
 			printf("Permission denied !\n");
+		}
+		else if (status == OTHER_ERROR)
+		{
+			printf("Other error !\n");
+		}
+	}
+	else if (lastCommand == SEARCH)
+	{
+		recv(server_sock, &status, 4, 0);
+		recv(server_sock, thrash, 1, 0);
+		if (status == SUCCESS)
+		{
+			printf("Success !\n");
+			memset(buffer, 0, 2048);
+			recv(server_sock, &size, 4, 0);
+			recv(server_sock, thrash, 1, 0);
+			memset(buffer, 0, 2048);
+			recv(server_sock, buffer, size, 0);
+			recv(server_sock, thrash, 1, 0);
+
+			if (size == 0)
+			{
+				printf("No results found !\n");
+				return;
+			}
+			write(STDOUT_FILENO, buffer, size);
 		}
 		else if (status == OTHER_ERROR)
 		{
