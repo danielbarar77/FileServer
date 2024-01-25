@@ -1,1 +1,21 @@
-daca merge atunci fac rebase
+LIST 0123456789 va primi o listă cu fișierele disponibile pe server.
+IN: cod_operație;
+OUT: status; număr octeți răspuns; lista de fișiere, separate prin ‘\0’
+DOWNLOAD - Clientul va putea descărca un fișier pe baza unei căi.
+IN: cod_operație; nr. octeți cale fișier; calea fișierului
+OUT: status; număr octeți răspuns; conținut fișier
+UPLOAD - Clientul va putea încărca un nou fișier
+IN: cod_operație; nr. octeți cale fișier; calea fișierului; nr. octeți conținut; conținut fișier
+OUT: status
+DELETE - Clientul va putea șterge un fișier existent
+IN: cod_operație; nr. octeți cale fișier; calea fișierului
+OUT: status
+MOVE - Clientul va putea schimba locația unui fișier pe server
+IN: cod_operație; nr_octeți_cale_fișier_sursă; cale_fișier_sursă_\0; nr_octeți_cale_fișier_destinație; cale_fișier_desitnație_\0
+OUT: status
+UPDATE - Clientul va putea schimba conținutul unui fișier.
+IN: cod_operație; nr. octeți cale fișier; calea fișierului; octet start; dimensiune; caracterele noi
+OUT: status
+SEARCH - Clientul va putea căuta un cuvânt în toate fișierele expuse de server și va primi o listă cu căile fișierelor ce conțin acea secvență în conținutul lor
+IN: cod_operație; nr. octeți cuvânt; cuvânt
+OUT: status; nr_octeti_dimensiune_lista; listă de fișiere separate prin '\0'

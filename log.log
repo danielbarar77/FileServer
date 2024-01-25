@@ -1,190 +1,42 @@
-2024-1-23 12:23:38	Server started
-2024-1-23 12:23:38	Connection accepted:6
-2024-1-23 12:23:41	LIST		Client:6	SUCCESS
-2024-1-23 12:23:51	DOWNLOAD	Client:6	FILE_NOT_FOUND	./root/dirTest/test3.txta
-2024-1-23 12:25:12	Connection closed:6
-2024-1-23 12:25:14	Server closed
-2024-1-23 12:25:15	Server started
-2024-1-23 12:25:15	Connection accepted:6
-2024-1-23 12:25:27	DOWNLOAD	Client:6	FILE_NOT_FOUND	./root/dirTest/test3.txta
-2024-1-23 12:25:38	Connection closed:6
-2024-1-23 12:25:45	Server closed
-2024-1-23 12:26:18	Server started
-2024-1-23 12:26:18	Connection accepted:6
-2024-1-23 12:26:47	Server started
-2024-1-23 12:26:47	Connection accepted:6
-2024-1-23 12:27:40	Server started
-2024-1-23 12:27:40	Connection accepted:6
-2024-1-23 12:27:53	DOWNLOAD	Client:6	FILE_NOT_FOUND	./root/dirTest/test3.txta
-2024-1-23 12:28:4	Connection closed:6
-2024-1-23 12:28:7	Server closed
-2024-1-23 12:28:41	Server started
-2024-1-23 12:28:41	Connection accepted:6
-2024-1-23 12:28:55	DOWNLOAD	Client:6	FILE_NOT_FOUND	./root/dirTest/test3.txta
-2024-1-23 12:29:1	Connection closed:6
-2024-1-23 12:29:2	Server closed
-2024-1-23 12:29:40	Server started
-2024-1-23 12:29:40	Connection accepted:6
-2024-1-23 12:29:55	DOWNLOAD	Client:6	SUCCESS	./root/dirTest/test3.txt
-2024-1-23 12:33:12	Connection closed:6
-2024-1-23 12:33:16	Server closed
-2024-1-23 12:33:18	Server started
-2024-1-23 12:33:18	Connection accepted:6
-2024-1-23 12:33:22	LIST		Client:6	SUCCESS
-2024-1-23 12:33:33	DOWNLOAD	Client:6	SUCCESS	./root/dirTest/test3.txt
-2024-1-23 12:33:58	DOWNLOAD	Client:6	SUCCESS	./root/restricted.txt
-2024-1-23 12:34:28	UPLOAD		Client:6	SUCCESS	./root/local.txt
-2024-1-23 12:34:30	LIST		Client:6	SUCCESS
-2024-1-23 12:34:56	DELETE		Client:6	SUCCESS	local.txt
-2024-1-23 12:34:58	LIST		Client:6	SUCCESS
-2024-1-23 12:35:29	DELETE		Client:6	FILE_NOT_FOUND	local.txt
-2024-1-23 12:35:37	Connection closed:6
-2024-1-23 12:37:59	Server closed
-2024-1-23 12:38:0	Server started
-2024-1-23 12:38:0	Connection accepted:6
-2024-1-23 12:38:4	LIST		Client:6	SUCCESS
-2024-1-23 12:38:18	UPLOAD		Client:6	SUCCESS	./root/local.txt
-2024-1-23 12:38:21	LIST		Client:6	SUCCESS
-2024-1-23 12:39:5	DELETE		Client:6	FILE_NOT_FOUND	./root/local.txte timp !�
-2024-1-23 12:39:15	LIST		Client:6	SUCCESS
-2024-1-23 12:39:32	DELETE		Client:6	SUCCESS	local.txt
-2024-1-23 12:39:55	DELETE		Client:6	SUCCESS	./root/local.txt
-2024-1-23 12:40:3	Connection closed:6
-2024-1-23 12:40:6	Server closed
-2024-1-23 12:42:42	Server started
-2024-1-23 12:42:42	Connection accepted:6
-2024-1-23 12:42:52	LIST		Client:6	SUCCESS
-2024-1-23 12:44:53	Connection closed:6
-2024-1-23 12:44:56	Server closed
-2024-1-23 12:44:57	Server started
-2024-1-23 12:44:57	Connection accepted:6
-2024-1-23 12:45:4	LIST		Client:6	SUCCESS
-2024-1-23 12:45:10	UPLOAD		Client:6	SUCCESS	./root/local.txt
-2024-1-23 12:45:16	LIST		Client:6	SUCCESS
-2024-1-23 12:45:41	MOVE		Client:6	SUCCESS	./root/local.txt	./root/dirTest/newLocal.txt
-2024-1-23 12:45:43	LIST		Client:6	SUCCESS
-2024-1-23 12:46:39	MOVE		Client:6	OTHER_ERROR(Rename failed)	./root/dirTest/newLocal.txt	
-2024-1-23 12:47:26	Server closed
-2024-1-23 14:30:51	Server started
-2024-1-23 14:30:51	Connection accepted:6
-2024-1-23 14:31:21	LIST		Client:6	SUCCESS
-2024-1-23 14:32:52	MOVE		Client:6	OTHER_ERROR(Rename failed)	./root/test1.txt	
-2024-1-23 14:36:52	LIST		Client:6	SUCCESS
-2024-1-23 14:36:58	MOVE		Client:6	FILE_NOT_FOUND(Old path)		
-2024-1-23 14:39:20	Server started
-2024-1-23 14:39:20	Connection accepted:6
-2024-1-23 14:40:5	Server started
-2024-1-23 14:40:5	Connection accepted:6
-2024-1-23 14:40:51	Server started
-2024-1-23 14:40:51	Connection accepted:6
-2024-1-23 14:40:54	LIST		Client:6	SUCCESS
-2024-1-23 14:41:6	DOWNLOAD	Client:6	SUCCESS	./root/test.txt
-2024-1-23 14:41:21	MOVE		Client:6	OTHER_ERROR(Rename failed)	./root/test1.txt	
-2024-1-23 14:41:21	MOVE		Client:6	FILE_NOT_FOUND(Old path)		
-2024-1-23 14:43:19	Server started
-2024-1-23 14:43:19	Connection accepted:6
-2024-1-23 14:43:37	UPDATE		Client:6	SUCCESS	./root/test1.txt
-2024-1-23 14:44:23	UPDATE		Client:6	SUCCESS	./root/test1.txt
-2024-1-23 14:45:2	UPDATE		Client:6	SUCCESS	./root/test1.txt
-2024-1-23 14:45:19	UPDATE		Client:6	OTHER_ERROR(Offset is bigger than file size)	./root/test1.txt
-2024-1-23 14:45:37	Connection closed:6
-2024-1-23 14:45:39	Server closed
-2024-1-23 14:46:29	Server started
-2024-1-23 14:46:29	Connection accepted:6
-2024-1-23 14:46:47	UPDATE		Client:6	SUCCESS	./root/test1.txt
-2024-1-23 14:47:14	UPDATE		Client:6	SUCCESS	./root/test1.txt
-2024-1-23 14:47:47	Connection closed:6
-2024-1-23 14:47:49	Server closed
-2024-1-23 14:48:1	Server started
-2024-1-23 14:48:1	Connection accepted:6
-2024-1-23 14:48:16	LIST		Client:6	SUCCESS
-2024-1-23 14:48:49	UPDATE		Client:6	SUCCESS	./root/dirTest/dirTest2/test5.txt
-2024-1-23 14:49:7	DOWNLOAD	Client:6	SUCCESS	./root/dirTest/dirTest2/test5.txt
-2024-1-23 14:49:22	Connection closed:6
-2024-1-23 14:49:28	Server closed
-2024-1-23 15:27:56	Server started
-2024-1-23 15:27:56	Connection accepted:6
-2024-1-23 15:28:0	LIST		Client:6	SUCCESS
-2024-1-23 15:28:28	Connection closed:6
-2024-1-23 15:28:30	Server closed
-2024-1-23 17:58:13	Server started
-2024-1-23 17:58:13	Connection accepted:6
-2024-1-23 17:58:13	Connection accepted:7
-2024-1-23 17:58:33	LIST		Client:7	SUCCESS
-2024-1-23 17:58:44	LIST		Client:6	SUCCESS
-2024-1-23 18:0:6	Connection closed:6
-2024-1-23 18:1:22	Connection closed:7
-2024-1-23 18:1:24	Server closed
-2024-1-23 22:30:8	Server started
-2024-1-23 22:30:8	Connection accepted:6
-2024-1-23 22:30:20	LIST		Client:6	SUCCESS
-2024-1-23 22:30:25	Server closed
-2024-1-23 22:31:36	Server closed
-2024-1-23 22:32:5	Server closed
-2024-1-23 22:32:34	Server closed
-2024-1-23 22:33:17	Server started
-2024-1-23 22:33:24	Server closed
-2024-1-23 22:34:1	Server started
-2024-1-23 22:34:1	Connection accepted:6
-2024-1-23 22:34:7	Server closed
-2024-1-23 22:35:2	Server closed
-2024-1-23 22:35:30	Server closed
-2024-1-23 22:35:35	Server closed
-2024-1-23 22:35:57	Server started
-2024-1-23 22:35:57	Connection accepted:6
-2024-1-23 22:36:1	Connection closed:6
-2024-1-23 22:36:5	Server closed
-2024-1-23 22:36:7	Server started
-2024-1-23 22:36:8	Server closed
-2024-1-23 22:36:11	Server started
-2024-1-23 22:36:11	Connection accepted:6
-2024-1-23 22:36:20	Server closed
-2024-1-23 22:36:33	Server started
-2024-1-23 22:36:33	Connection accepted:6
-2024-1-23 22:36:38	Server closed
-2024-1-25 17:6:47	Server started
-2024-1-25 17:6:47	Connection accepted:6
-2024-1-25 17:6:54	LIST		Client:6	SUCCESS
-2024-1-25 17:6:57	Server closed
-2024-1-25 17:8:43	Server started
-2024-1-25 17:8:43	Connection accepted:6
-2024-1-25 17:8:48	Server closed
-2024-1-25 17:24:9	Server started
-2024-1-25 17:24:43	Server started
-2024-1-25 17:24:48	Server started
-2024-1-25 17:24:50	Server closed
-2024-1-25 17:24:53	Server started
-2024-1-25 17:29:0	Server started
-2024-1-25 17:40:31	Server started
-2024-1-25 17:46:59	Server started
-2024-1-25 17:48:42	Server started
-2024-1-25 17:48:42	Connection accepted:7
-2024-1-25 17:48:42	Connection accepted:8
-2024-1-25 17:48:52	Connection closed:8
-2024-1-25 17:53:34	Server started
-2024-1-25 17:57:13	Server started
-2024-1-25 17:57:52	Server started
-2024-1-25 17:58:13	Server started
-2024-1-25 18:16:39	Server started
-2024-1-25 18:17:16	Server started
-2024-1-25 18:17:23	Server started
-2024-1-25 18:29:1	Server started
-2024-1-25 18:29:2	Server closed
-2024-1-25 18:37:19	Server started
-2024-1-25 18:37:19	Connection accepted:7
-2024-1-25 18:37:23	LIST		Client:7	SUCCESS
-2024-1-25 18:37:19	Connection accepted:8
-2024-1-25 18:37:42	DOWNLOAD	Client:8	SUCCESS	./root/test.txt
-2024-1-25 18:37:47	Connection closed:8
-2024-1-25 18:37:50	Server closed
-2024-1-25 18:38:10	Server started
-2024-1-25 18:38:10	Connection accepted:7
-2024-1-25 18:38:19	Server closed
-2024-1-25 18:56:54	Server started
-2024-1-25 18:56:54	Connection accepted:7
-2024-1-25 18:56:59	LIST		Client:7	SUCCESS
-2024-1-25 18:56:54	Connection accepted:8
-2024-1-25 18:57:8	LIST		Client:8	SUCCESS
-2024-1-25 18:57:23	Connection closed:8
-2024-1-25 18:57:25	Connection closed:7
-2024-1-25 18:57:27	Server closed
+2024-1-25 19:39:10	Server started
+2024-1-25 19:39:17	Server closed
+2024-1-25 19:43:29	Server started
+2024-1-25 19:43:29	Connection accepted:7
+2024-1-25 19:43:29	Connection accepted:8
+2024-1-25 19:43:36	LIST		Client:8	SUCCESS
+2024-1-25 19:43:57	DOWNLOAD	Client:8	FILE_NOT_FOUND	t
+2024-1-25 19:45:21	Server started
+2024-1-25 19:45:21	Connection accepted:7
+2024-1-25 19:45:46	Server started
+2024-1-25 19:45:46	Connection accepted:7
+2024-1-25 19:47:41	Server started
+2024-1-25 19:47:41	Connection accepted:7
+2024-1-25 19:47:50	DOWNLOAD	Client:7	SUCCESS	./root/test.txt
+2024-1-25 19:48:3	LIST		Client:7	SUCCESS
+2024-1-25 19:48:20	DOWNLOAD	Client:7	SUCCESS	./root/test1.txt
+2024-1-25 19:48:38	DOWNLOAD	Client:7	SUCCESS	./root/dirTest/dirTest2/test5.txt
+2024-1-25 19:48:38	Connection closed:7
+2024-1-25 19:50:26	Server closed
+2024-1-25 19:50:29	Server started
+2024-1-25 19:50:29	Connection accepted:7
+2024-1-25 19:50:35	LIST		Client:7	SUCCESS
+2024-1-25 19:50:38	LIST		Client:7	SUCCESS
+2024-1-25 19:50:48	DOWNLOAD	Client:7	SUCCESS	./root/test1.txt
+2024-1-25 19:50:58	DOWNLOAD	Client:7	FILE_NOT_FOUND	./root/diwa
+2024-1-25 19:51:15	DOWNLOAD	Client:7	SUCCESS	./root/dirTest/dirTest2/test5.txt
+2024-1-25 19:51:38	LIST		Client:7	SUCCESS
+2024-1-25 19:51:44	UPLOAD		Client:7	SUCCESS	./root/local.txt
+2024-1-25 19:51:46	LIST		Client:7	SUCCESS
+2024-1-25 19:52:17	UPDATE		Client:7	SUCCESS	./root/local.txt
+2024-1-25 19:52:40	DOWNLOAD	Client:7	SUCCESS	./root/local.txt
+2024-1-25 19:53:34	LIST		Client:7	SUCCESS
+2024-1-25 19:54:43	MOVE		Client:7	SUCCESS	./root/local.txt	./root/dirTest/dirTest2/newLocal.txt
+2024-1-25 19:54:46	LIST		Client:7	SUCCESS
+2024-1-25 19:57:48	DELETE		Client:7	SUCCESS	./root/dirTest/dirTest2/newLocal.txt
+2024-1-25 19:57:50	LIST		Client:7	SUCCESS
+2024-1-25 19:58:1	Server closed
+2024-1-25 20:0:50	Server started
+2024-1-25 20:0:50	Connection accepted:7
+2024-1-25 20:0:55	LIST		Client:7	SUCCESS
+2024-1-25 20:1:19	UPDATE		Client:7	SUCCESS	./root/dirTest/dirTest2/test5.txt
+2024-1-25 20:1:33	DOWNLOAD	Client:7	SUCCESS	./root/dirTest/dirTest2/test5.txt

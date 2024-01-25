@@ -937,7 +937,6 @@ void listenForEvents()
 			// listen from signalfd
 			else if (events[i].data.fd == signal_fd)
 			{
-				printf("Signal received\n");
 				struct signalfd_siginfo fdsi;
 				ssize_t s;
 				s = read(signal_fd, &fdsi, sizeof(struct signalfd_siginfo));
@@ -948,7 +947,7 @@ void listenForEvents()
 				}
 				if (fdsi.ssi_signo == SIGINT || fdsi.ssi_signo == SIGTERM)
 				{
-					printf("SIGINT or SIGTERM received\n");
+					printf("Recived signal %s\n", strsignal(fdsi.ssi_signo));
 					endServer();
 				}
 			}
@@ -977,7 +976,6 @@ int main(int agc, char **argv)
 		return -1;
 	}
 
-	// signalHandler();
 	logfd = open("log.log", O_WRONLY | O_CREAT | O_APPEND, 0666);
 	if (logfd == -1)
 	{

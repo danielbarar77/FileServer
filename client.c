@@ -57,16 +57,6 @@ char *menu()
 	return input;
 }
 
-char *intToChar(int num)
-{
-	char *str = (char *)malloc(4);
-	str[0] = (num >> 24) & 0xFF;
-	str[1] = (num >> 16) & 0xFF;
-	str[2] = (num >> 8) & 0xFF;
-	str[3] = num & 0xFF;
-	return str;
-}
-
 int checkExistanceFile(char *filepath)
 {
 	int accessStatus = access(filepath, F_OK);
@@ -303,8 +293,6 @@ char *executeCommand(char *input)
 	}
 	else if (strcmp(token, "SEARCH") == 0)
 	{
-		printf("Not implemented yet!\n");
-		memcpy(command, intToChar(0x20), 4);
 		return NULL;
 	}
 	else
@@ -317,7 +305,7 @@ char *executeCommand(char *input)
 
 void reciveData()
 {
-	char *buffer = (char *)malloc(512);
+	char *buffer = (char *)malloc(4096);
 	char *thrash = (char *)malloc(1);
 	memset(buffer, 0, 512);
 	uint32_t size;
